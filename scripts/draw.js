@@ -27,78 +27,87 @@ let isHost = false;
 let isMultiplayer = false;
 // ------------------------------
 
-function initCosmos() {
+// MODIFICACIÓN: Ahora initCosmos acepta un "universo precalculado" (para el cliente)
+function initCosmos(customCosmos = null) {
     stars = [];
     nebulae = [];
     planets = [];
 
-    const colors = [
-        { r: 24, g: 8, b: 45, a: 0.18 },   
-        { r: 6, g: 20, b: 35, a: 0.15 },   
-        { r: 35, g: 2, b: 20, a: 0.10 },   
-        { r: 0, g: 25, b: 25, a: 0.08 }    
-    ];
+    if (customCosmos) {
+        // El cliente hereda el fondo exacto del Host
+        nebulae = customCosmos.nebulae;
+        planets = customCosmos.planets;
+        stars = customCosmos.stars;
+    } else {
+        // Generación por defecto (Host o Singleplayer)
+        const colors = [
+            { r: 24, g: 8, b: 45, a: 0.18 },   
+            { r: 6, g: 20, b: 35, a: 0.15 },   
+            { r: 35, g: 2, b: 20, a: 0.10 },   
+            { r: 0, g: 25, b: 25, a: 0.08 }    
+        ];
 
-    for(let i = 0; i < 12; i++) {
-        nebulae.push({
-            x: Math.random() * arenaSize,
-            y: Math.random() * arenaSize,
-            radius: Math.random() * 500 + 400,
-            color: colors[i % colors.length]
-        });
-    }
-
-    const planetColors = [
-        { base: '#3a4f7c', shadow: '#151c2e', atmos: '#5b75b3', details: '#283759' },
-        { base: '#e26d5c', shadow: '#4f1a13', atmos: '#f1a196', details: '#b84a39' },
-        { base: '#2a6f97', shadow: '#012a4a', atmos: '#61a5c2', details: '#014f86' },
-        { base: '#a1814c', shadow: '#3d301b', atmos: '#d1b88a', details: '#785f33' },
-        { base: '#7b2cbf', shadow: '#240046', atmos: '#9d4edd', details: '#5a189a' }
-    ];
-
-    for(let i = 0; i < 10; i++) {
-        const depth = Math.random() * 0.4 + 0.15; 
-        const palette = planetColors[Math.floor(Math.random() * planetColors.length)];
-        const radius = Math.random() * 80 + 50;
-        let surfaceFeatures = [];
-        const numFeatures = Math.floor(Math.random() * 5) + 4;
-        for(let f = 0; f < numFeatures; f++) {
-            surfaceFeatures.push({
-                relX: (Math.random() * 1.2 - 0.6) * radius,
-                relY: (Math.random() * 1.2 - 0.6) * radius,
-                rad: Math.random() * (radius * 0.25) + (radius * 0.05)
+        for(let i = 0; i < 12; i++) {
+            nebulae.push({
+                x: Math.random() * arenaSize,
+                y: Math.random() * arenaSize,
+                radius: Math.random() * 500 + 400,
+                color: colors[i % colors.length]
             });
         }
 
-        planets.push({
-            x: Math.random() * arenaSize,
-            y: Math.random() * arenaSize,
-            radius: radius,
-            baseColor: palette.base,
-            shadowColor: palette.shadow,
-            atmosColor: palette.atmos,
-            detailColor: palette.details,
-            features: surfaceFeatures,
-            depth: depth,
-            shadowAngle: Math.random() * Math.PI * 2,
-            hasRings: Math.random() > 0.5,
-            ringAngle: (Math.random() * 0.4 - 0.2) + Math.PI * 0.15,
-            ringColor: palette.atmos
-        });
-    }
+        const planetColors = [
+            { base: '#3a4f7c', shadow: '#151c2e', atmos: '#5b75b3', details: '#283759' },
+            { base: '#e26d5c', shadow: '#4f1a13', atmos: '#f1a196', details: '#b84a39' },
+            { base: '#2a6f97', shadow: '#012a4a', atmos: '#61a5c2', details: '#014f86' },
+            { base: '#a1814c', shadow: '#3d301b', atmos: '#d1b88a', details: '#785f33' },
+            { base: '#7b2cbf', shadow: '#240046', atmos: '#9d4edd', details: '#5a189a' }
+        ];
 
-    const starColors = ['#ffffff', '#fff5ea', '#eaf5ff', '#ffeaea', '#ffd7b3', '#b3f0ff'];
-    for(let i = 0; i < numStars; i++) {
-        const depth = Math.random(); 
-        stars.push({
-            x: Math.random() * arenaSize,
-            y: Math.random() * arenaSize,
-            size: depth * 1.8 + 0.2, 
-            color: starColors[Math.floor(Math.random() * starColors.length)],
-            depth: depth * 0.9 + 0.1, 
-            pulseSpeed: Math.random() * 0.04 + 0.01,
-            pulsePhase: Math.random() * Math.PI * 2
-        });
+        for(let i = 0; i < 10; i++) {
+            const depth = Math.random() * 0.4 + 0.15; 
+            const palette = planetColors[Math.floor(Math.random() * planetColors.length)];
+            const radius = Math.random() * 80 + 50;
+            let surfaceFeatures = [];
+            const numFeatures = Math.floor(Math.random() * 5) + 4;
+            for(let f = 0; f < numFeatures; f++) {
+                surfaceFeatures.push({
+                    relX: (Math.random() * 1.2 - 0.6) * radius,
+                    relY: (Math.random() * 1.2 - 0.6) * radius,
+                    rad: Math.random() * (radius * 0.25) + (radius * 0.05)
+                });
+            }
+
+            planets.push({
+                x: Math.random() * arenaSize,
+                y: Math.random() * arenaSize,
+                radius: radius,
+                baseColor: palette.base,
+                shadowColor: palette.shadow,
+                atmosColor: palette.atmos,
+                detailColor: palette.details,
+                features: surfaceFeatures,
+                depth: depth,
+                shadowAngle: Math.random() * Math.PI * 2,
+                hasRings: Math.random() > 0.5,
+                ringAngle: (Math.random() * 0.4 - 0.2) + Math.PI * 0.15,
+                ringColor: palette.atmos
+            });
+        }
+
+        const starColors = ['#ffffff', '#fff5ea', '#eaf5ff', '#ffeaea', '#ffd7b3', '#b3f0ff'];
+        for(let i = 0; i < numStars; i++) {
+            const depth = Math.random(); 
+            stars.push({
+                x: Math.random() * arenaSize,
+                y: Math.random() * arenaSize,
+                size: depth * 1.8 + 0.2, 
+                color: starColors[Math.floor(Math.random() * starColors.length)],
+                depth: depth * 0.9 + 0.1, 
+                pulseSpeed: Math.random() * 0.04 + 0.01,
+                pulsePhase: Math.random() * Math.PI * 2
+            });
+        }
     }
     preRenderNebulae();
 }
@@ -153,7 +162,7 @@ document.addEventListener('fullscreenchange', () => setTimeout(resizeCanvas, 100
 
 updateJoystickPositions();
 resizeCanvas();
-initCosmos();
+initCosmos(); // Carga inicial por defecto
 
 let player;
 let keys = {};
@@ -272,6 +281,7 @@ class Player {
             }
         }
 
+        // Estela local
         if (Math.hypot(ax, ay) > 0.05 || currentSpeed > 1) {
             let trailAngle = this.angle + Math.PI + (Math.random() * 0.4 - 0.2);
             let pX = this.x - Math.cos(this.angle) * 12;
@@ -303,18 +313,15 @@ class Player {
             const bx = this.x + cos * 25;
             const by = this.y + sin * 25;
             
-            // Creamos la bala en nuestra pantalla
             entities.bullets.push(new Bullet(bx, by, this.angle, '#00ffff'));
             
-            // --- MULTIJUGADOR: NOTIFICAR DISPARO ---
             if (isMultiplayer) {
                 if (isHost) {
                     broadcastToClients({ type: 'spawn_bullet', x: bx, y: by, angle: this.angle, color: '#00ffff' });
                 } else if (connection && connection.open) {
-                    connection.send({ type: 'spawn_bullet', x: bx, y: by, angle: this.angle, color: '#ff00aa' }); // Las del cliente se ven fucsia
+                    connection.send({ type: 'spawn_bullet', x: bx, y: by, angle: this.angle, color: '#ff00aa' }); 
                 }
             }
-            // ----------------------------------------
 
             for(let i=0; i<3; i++) {
                 let flashAngle = this.angle + (Math.random()*0.6 - 0.3);
@@ -356,7 +363,6 @@ class Bullet {
 
 class Gem {
     constructor(x, y, color) {
-        // Si nos pasan coordenadas fijas (desde el host), las usamos. Si no, al azar (solo inicialización singleplayer)
         this.x = x !== undefined ? x : Math.random() * arenaSize; 
         this.y = y !== undefined ? y : Math.random() * arenaSize;
         this.radius = 5;
@@ -376,7 +382,6 @@ class Gem {
     }
 }
 
-// Generador de gemas controlado (solo para el Host o partidas solitarias)
 function generateGemsArray() {
     let arr = [];
     for(let i=0; i<90; i++) {
@@ -396,10 +401,8 @@ function startGame(gemsData = null) {
     entities.bullets = []; entities.gems = []; entities.particles = [];
     
     if (gemsData) {
-        // Si entra un array de gemas sincronizado (Clientes)
         gemsData.forEach(g => entities.gems.push(new Gem(g.x, g.y, g.color)));
     } else {
-        // Si somos Host o estamos solos, generamos las nuestras
         const localGems = generateGemsArray();
         localGems.forEach(g => entities.gems.push(new Gem(g.x, g.y, g.color)));
     }
@@ -553,7 +556,6 @@ function drawVirtualJoysticks() {
     ctx.restore();
 }
 
-// Función auxiliar para que el host envíe un mensaje a todos los clientes
 function broadcastToClients(msg) {
     if (peer && peer.connections) {
         Object.keys(peer.connections).forEach(peerId => {
@@ -584,13 +586,10 @@ function loop() {
     // --- ENVIAR DATOS MULTIJUGADOR ---
     if (isMultiplayer) {
         if (isHost) {
-            // El Host añade su propia información antes de empaquetar
             let dataToSend = { ...connectedPlayers };
-            dataToSend['host'] = { x: player.x, y: player.y, angle: player.angle, name: player.name };
+            dataToSend['host'] = { x: player.x, y: player.y, angle: player.angle, name: player.name, vx: player.vx, vy: player.vy };
             
-            // Además de las posiciones, enviamos la lista de gemas actual del host para que siempre estén idénticas
             let gemsData = entities.gems.map(g => ({ x: g.x, y: g.y, color: g.color }));
-            
             broadcastToClients({ type: 'host_update', players: dataToSend, gems: gemsData });
         } else {
             if (connection && connection.open) {
@@ -599,7 +598,9 @@ function loop() {
                     x: player.x,
                     y: player.y,
                     angle: player.angle,
-                    name: player.name
+                    name: player.name,
+                    vx: player.vx,
+                    vy: player.vy
                 });
             }
         }
@@ -625,12 +626,10 @@ function loop() {
         if (p.life <= 0) entities.particles.splice(i, 1);
     }
 
-    // --- MANEJO DE GEMAS SINCRONIZADAS ---
     for(let i = entities.gems.length - 1; i >= 0; i--) {
         let g = entities.gems[i]; 
         g.draw(camX, camY);
         
-        // Detección de colisión
         if(Math.hypot(player.x - g.x, player.y - g.y) < player.radius + g.radius) {
             player.score += 10; scoreVal.innerText = player.score;
             createExplosion(g.x, g.y, g.color, 8); 
@@ -638,15 +637,13 @@ function loop() {
             if (isMultiplayer) {
                 if (isHost) {
                     entities.gems.splice(i, 1); 
-                    entities.gems.push(new Gem()); // El host genera una nueva en un punto aleatorio
+                    entities.gems.push(new Gem()); 
                 } else {
-                    // Si el cliente agarra una gema, le avisa al Host cuál índice de gema tiene que borrar
                     if (connection && connection.open) {
                         connection.send({ type: 'gem_collected', index: i });
                     }
                 }
             } else {
-                // Modo solitario normal
                 entities.gems.splice(i, 1); 
                 entities.gems.push(new Gem());
             }
@@ -663,12 +660,24 @@ function loop() {
         }
     }
 
-    // --- DIBUJAR JUGADORES RIVALES ---
+    // --- DIBUJAR RIVALES + SUS ESTELAS ---
     Object.keys(connectedPlayers).forEach(id => {
         if (!isHost && id === peer.id) return; 
 
         let p = connectedPlayers[id];
         
+        // MODIFICACIÓN CRUCIAL: Añadimos la estela a los rivales usando su velocidad (vx, vy) recibida
+        let rivalSpeed = Math.hypot(p.vx || 0, p.vy || 0);
+        if (rivalSpeed > 1) {
+            let trailAngle = p.angle + Math.PI + (Math.random() * 0.4 - 0.2);
+            let pX = p.x - Math.cos(p.angle) * 12;
+            let pY = p.y - Math.sin(p.angle) * 12;
+            let pVx = Math.cos(trailAngle) * (Math.random() * 3 + 1) + (p.vx || 0) * 0.5;
+            let pVy = Math.sin(trailAngle) * (Math.random() * 3 + 1) + (p.vy || 0) * 0.5;
+            // Estela rosa neón para los enemigos
+            entities.particles.push(new Particle(pX, pY, pVx, pVy, Math.random() * 2.5 + 1, '#ff00aa', Math.random() * 15 + 10, 'trail'));
+        }
+
         ctx.save();
         ctx.translate(p.x - camX, p.y - camY);
         ctx.rotate(p.angle);
@@ -769,7 +778,7 @@ partyBtn.addEventListener('click', () => {
     }
 });
 
-// --- RECEPCIÓN DE MENSAJES LÓGICA MULTIJUGADOR ---
+// --- ENLACE MULTIJUGADOR AVANZADO ---
 document.getElementById('host-btn').addEventListener('click', () => {
     isHost = true;
     isMultiplayer = true;
@@ -796,22 +805,24 @@ document.getElementById('host-btn').addEventListener('click', () => {
     });
 
     peer.on('connection', (conn) => {
-        // En cuanto el cliente se conecta, el host le manda las gemas iniciales inmediatamente
-        let initialGems = entities.gems.map(g => ({ x: g.x, y: g.y, color: g.color }));
+        // MODIFICACIÓN EXTRA: El host le manda las gemas Y TAMBIÉN sus arrays de planetas/estrellas/nebulosas creados
         conn.on('open', () => {
-            conn.send({ type: 'init_gems', gems: initialGems });
+            conn.send({ 
+                type: 'init_world', 
+                gems: entities.gems.map(g => ({ x: g.x, y: g.y, color: g.color })),
+                cosmos: { nebulae: nebulae, planets: planets, stars: stars }
+            });
         });
 
         conn.on('data', (data) => {
             if (data.type === 'client_update') {
-                connectedPlayers[conn.peer] = { x: data.x, y: data.y, angle: data.angle, name: data.name };
+                // Almacenamos posición y las velocidades (vx, vy) para poder recrear la estela exacta del rival
+                connectedPlayers[conn.peer] = { x: data.x, y: data.y, angle: data.angle, name: data.name, vx: data.vx, vy: data.vy };
             }
-            // Si el cliente disparó, el host genera esa bala y se la rebota a los demás clientes
             if (data.type === 'spawn_bullet') {
                 entities.bullets.push(new Bullet(data.x, data.y, data.angle, data.color));
                 broadcastToClients({ type: 'spawn_bullet', x: data.x, y: data.y, angle: data.angle, color: data.color });
             }
-            // Si el cliente recolectó una gema, el host la borra y añade una nueva en su juego
             if (data.type === 'gem_collected') {
                 if (entities.gems[data.index]) {
                     entities.gems.splice(data.index, 1);
@@ -833,17 +844,15 @@ document.getElementById('join-btn').addEventListener('click', () => {
     peer.on('open', () => {
         connection = peer.connect(targetId);
         connection.on('data', (data) => {
-            // El cliente recibe las gemas iniciales del host ANTES de arrancar el renderizado
-            if (data.type === 'init_gems') {
+            // MODIFICACIÓN CLIENTE: Escucha e inicializa el fondo idéntico antes de arrancar
+            if (data.type === 'init_world') {
+                initCosmos(data.cosmos); // Re-escribe el fondo local con el del host
                 startGame(data.gems);
             }
-            // El cliente recibe actualizaciones constantes de la sala (posiciones y gemas vivas)
             if (data.type === 'host_update') {
                 connectedPlayers = data.players;
-                // Re-sincronizamos el mapa de gemas local con lo que diga el host
                 entities.gems = data.gems.map(g => new Gem(g.x, g.y, g.color));
             }
-            // El cliente recibe disparos ejecutados por otros jugadores
             if (data.type === 'spawn_bullet') {
                 entities.bullets.push(new Bullet(data.x, data.y, data.angle, data.color));
             }
