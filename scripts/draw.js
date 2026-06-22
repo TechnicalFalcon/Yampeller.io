@@ -21,8 +21,8 @@ let nebulaCache = null;
 
 // --- VARIABLES MULTIJUGADOR ---
 let peer = null;
-let connection = null;       // Conexión del cliente al host
-let connectedPlayers = {};   // Datos de los rivales { peerId: datos }
+let connection = null;       
+let connectedPlayers = {};   
 let isHost = false;
 let isMultiplayer = false;
 // ------------------------------
@@ -300,11 +300,26 @@ class Player {
         const now = Date.now();
         if (now - this.lastShot >= 160) {
             const cos = Math.cos(this.angle); const sin = Math.sin(this.angle);
-            entities.bullets.push(new Bullet(this.x + cos*25, this.y + sin*25, this.angle, '#00ffff'));
+            const bx = this.x + cos * 25;
+            const by = this.y + sin * 25;
+            
+            // Creamos la bala en nuestra pantalla
+            entities.bullets.push(new Bullet(bx, by, this.angle, '#00ffff'));
+            
+            // --- MULTIJUGADOR: NOTIFICAR DISPARO ---
+            if (isMultiplayer) {
+                if (isHost) {
+                    broadcastToClients({ type: 'spawn_bullet', x: bx, y: by, angle: this.angle, color: '#00ffff' });
+                } else if (connection && connection.open) {
+                    connection.send({ type: 'spawn_bullet', x: bx, y: by, angle: this.angle, color: '#ff00aa' }); // Las del cliente se ven fucsia
+                }
+            }
+            // ----------------------------------------
+
             for(let i=0; i<3; i++) {
                 let flashAngle = this.angle + (Math.random()*0.6 - 0.3);
                 entities.particles.push(new Particle(
-                    this.x + cos*25, this.y + sin*25, 
+                    bx, by, 
                     Math.cos(flashAngle)*(Math.random()*2+4), Math.sin(flashAngle)*(Math.random()*2+4),
                     2, '#ffffff', 8, 'trail'
                 ));
@@ -340,10 +355,12 @@ class Bullet {
 }
 
 class Gem {
-    constructor() {
-        this.x = Math.random() * arenaSize; this.y = Math.random() * arenaSize;
+    constructor(x, y, color) {
+        // Si nos pasan coordenadas fijas (desde el host), las usamos. Si no, al azar (solo inicialización singleplayer)
+        this.x = x !== undefined ? x : Math.random() * arenaSize; 
+        this.y = y !== undefined ? y : Math.random() * arenaSize;
         this.radius = 5;
-        this.color = Math.random() > 0.5 ? '#00ffaa' : '#ff00aa';
+        this.color = color || (Math.random() > 0.5 ? '#00ffaa' : '#ff00aa');
         this.pulse = Math.random() * Math.PI;
     }
     draw(camX, camY) {
@@ -359,12 +376,34 @@ class Gem {
     }
 }
 
-function startGame() {
+// Generador de gemas controlado (solo para el Host o partidas solitarias)
+function generateGemsArray() {
+    let arr = [];
+    for(let i=0; i<90; i++) {
+        arr.push({
+            x: Math.random() * arenaSize,
+            y: Math.random() * arenaSize,
+            color: Math.random() > 0.5 ? '#00ffaa' : '#ff00aa'
+        });
+    }
+    return arr;
+}
+
+function startGame(gemsData = null) {
     let name = playerNameInput.value.trim();
     if(!name) name = "Player";
     player = new Player(arenaSize/2, arenaSize/2, name);
     entities.bullets = []; entities.gems = []; entities.particles = [];
-    for(let i=0; i<90; i++) entities.gems.push(new Gem());
+    
+    if (gemsData) {
+        // Si entra un array de gemas sincronizado (Clientes)
+        gemsData.forEach(g => entities.gems.push(new Gem(g.x, g.y, g.color)));
+    } else {
+        // Si somos Host o estamos solos, generamos las nuestras
+        const localGems = generateGemsArray();
+        localGems.forEach(g => entities.gems.push(new Gem(g.x, g.y, g.color)));
+    }
+
     gameActive = true;
     menuScreen.classList.add('hidden');
     hud.style.display = 'block';
@@ -514,6 +553,16 @@ function drawVirtualJoysticks() {
     ctx.restore();
 }
 
+// Función auxiliar para que el host envíe un mensaje a todos los clientes
+function broadcastToClients(msg) {
+    if (peer && peer.connections) {
+        Object.keys(peer.connections).forEach(peerId => {
+            const conns = peer.connections[peerId];
+            conns.forEach(c => { if (c.open) c.send(msg); });
+        });
+    }
+}
+
 function loop() {
     const logicalWidth = canvas.width / dpr;
     const logicalHeight = canvas.height / dpr;
@@ -535,18 +584,14 @@ function loop() {
     // --- ENVIAR DATOS MULTIJUGADOR ---
     if (isMultiplayer) {
         if (isHost) {
-            if (peer && peer.connections) {
-                Object.keys(peer.connections).forEach(peerId => {
-                    const conns = peer.connections[peerId];
-                    conns.forEach(c => {
-                        if (c.open) {
-                            let dataToSend = { ...connectedPlayers };
-                            dataToSend['host'] = { x: player.x, y: player.y, angle: player.angle, name: player.name };
-                            c.send({ type: 'host_update', players: dataToSend });
-                        }
-                    });
-                });
-            }
+            // El Host añade su propia información antes de empaquetar
+            let dataToSend = { ...connectedPlayers };
+            dataToSend['host'] = { x: player.x, y: player.y, angle: player.angle, name: player.name };
+            
+            // Además de las posiciones, enviamos la lista de gemas actual del host para que siempre estén idénticas
+            let gemsData = entities.gems.map(g => ({ x: g.x, y: g.y, color: g.color }));
+            
+            broadcastToClients({ type: 'host_update', players: dataToSend, gems: gemsData });
         } else {
             if (connection && connection.open) {
                 connection.send({
@@ -579,16 +624,35 @@ function loop() {
         p.draw(camX, camY);
         if (p.life <= 0) entities.particles.splice(i, 1);
     }
+
+    // --- MANEJO DE GEMAS SINCRONIZADAS ---
     for(let i = entities.gems.length - 1; i >= 0; i--) {
         let g = entities.gems[i]; 
         g.draw(camX, camY);
+        
+        // Detección de colisión
         if(Math.hypot(player.x - g.x, player.y - g.y) < player.radius + g.radius) {
             player.score += 10; scoreVal.innerText = player.score;
             createExplosion(g.x, g.y, g.color, 8); 
-            entities.gems.splice(i, 1); 
-            entities.gems.push(new Gem()); 
+            
+            if (isMultiplayer) {
+                if (isHost) {
+                    entities.gems.splice(i, 1); 
+                    entities.gems.push(new Gem()); // El host genera una nueva en un punto aleatorio
+                } else {
+                    // Si el cliente agarra una gema, le avisa al Host cuál índice de gema tiene que borrar
+                    if (connection && connection.open) {
+                        connection.send({ type: 'gem_collected', index: i });
+                    }
+                }
+            } else {
+                // Modo solitario normal
+                entities.gems.splice(i, 1); 
+                entities.gems.push(new Gem());
+            }
         }
     }
+
     for(let i = entities.bullets.length - 1; i >= 0; i--) {
         let b = entities.bullets[i]; 
         b.update(); 
@@ -632,7 +696,6 @@ function loop() {
         ctx.fillText(p.name, p.x - camX, p.y - camY - 25);
         ctx.restore();
     });
-    // ---------------------------------
 
     player.draw(camX, camY);
     drawVirtualJoysticks();
@@ -697,9 +760,8 @@ function updateJoystickCalc(touch, joystickObj) {
     joystickObj.moveY = (joystickObj.curY - joystickObj.startY) / joystickObj.maxRadius;
 }
 
-playBtn.addEventListener('click', startGame);
+playBtn.addEventListener('click', () => startGame());
 
-// --- MODIFICACIONES DEL MENÚ MULTIJUGADOR ---
 partyBtn.addEventListener('click', () => {
     const partyOptions = document.getElementById('party-options');
     if (partyOptions) {
@@ -707,32 +769,54 @@ partyBtn.addEventListener('click', () => {
     }
 });
 
+// --- RECEPCIÓN DE MENSAJES LÓGICA MULTIJUGADOR ---
 document.getElementById('host-btn').addEventListener('click', () => {
     isHost = true;
     isMultiplayer = true;
-    peer = new Peer();
+    peer = new Peer({ config: { 'iceServers': [{ url: 'stun:stun.l.google.com:19302' }] } });
     
     peer.on('open', (id) => {
-        // Detenemos el inicio automático e inyectamos un botón manual
         document.getElementById('room-info').innerHTML = `
             SALA CREADA.<br>Pásale este ID a tu amigo:<br>
-            <strong style="color:#00d5ff">${id}</strong><br><br>
+            <strong id="copy-target" style="color:#00d5ff">${id}</strong><br><br>
+            <button id="copy-btn" class="neon-btn neon-blue" style="font-size:0.9rem; padding:5px 10px; margin-bottom:10px; width:80%;">📋 COPIAR ID</button>
             <button id="manual-start-btn" class="neon-btn neon-red" style="font-size:1.1rem; padding:8px 15px; width:100%;">¡EMPEZAR PARTIDA!</button>
         `;
         
-        // El juego solo iniciará cuando hagas click en este nuevo botón
-        document.getElementById('manual-start-btn').addEventListener('click', startGame);
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            navigator.clipboard.writeText(id).then(() => {
+                const copyBtn = document.getElementById('copy-btn');
+                copyBtn.innerText = "¡COPIADO!";
+                copyBtn.style.borderColor = "#00ffaa";
+                setTimeout(() => { copyBtn.innerText = "📋 COPIAR ID"; copyBtn.style.borderColor = "#00d5ff"; }, 2000);
+            });
+        });
+        
+        document.getElementById('manual-start-btn').addEventListener('click', () => startGame());
     });
 
     peer.on('connection', (conn) => {
+        // En cuanto el cliente se conecta, el host le manda las gemas iniciales inmediatamente
+        let initialGems = entities.gems.map(g => ({ x: g.x, y: g.y, color: g.color }));
+        conn.on('open', () => {
+            conn.send({ type: 'init_gems', gems: initialGems });
+        });
+
         conn.on('data', (data) => {
             if (data.type === 'client_update') {
-                connectedPlayers[conn.peer] = {
-                    x: data.x,
-                    y: data.y,
-                    angle: data.angle,
-                    name: data.name
-                };
+                connectedPlayers[conn.peer] = { x: data.x, y: data.y, angle: data.angle, name: data.name };
+            }
+            // Si el cliente disparó, el host genera esa bala y se la rebota a los demás clientes
+            if (data.type === 'spawn_bullet') {
+                entities.bullets.push(new Bullet(data.x, data.y, data.angle, data.color));
+                broadcastToClients({ type: 'spawn_bullet', x: data.x, y: data.y, angle: data.angle, color: data.color });
+            }
+            // Si el cliente recolectó una gema, el host la borra y añade una nueva en su juego
+            if (data.type === 'gem_collected') {
+                if (entities.gems[data.index]) {
+                    entities.gems.splice(data.index, 1);
+                    entities.gems.push(new Gem());
+                }
             }
         });
     });
@@ -744,17 +828,24 @@ document.getElementById('join-btn').addEventListener('click', () => {
 
     isHost = false;
     isMultiplayer = true;
-    peer = new Peer();
+    peer = new Peer({ config: { 'iceServers': [{ url: 'stun:stun.l.google.com:19302' }] } });
 
     peer.on('open', () => {
         connection = peer.connect(targetId);
-        connection.on('open', () => {
-            // El cliente sí arranca de golpe al conectarse con éxito
-            startGame();
-        });
         connection.on('data', (data) => {
+            // El cliente recibe las gemas iniciales del host ANTES de arrancar el renderizado
+            if (data.type === 'init_gems') {
+                startGame(data.gems);
+            }
+            // El cliente recibe actualizaciones constantes de la sala (posiciones y gemas vivas)
             if (data.type === 'host_update') {
                 connectedPlayers = data.players;
+                // Re-sincronizamos el mapa de gemas local con lo que diga el host
+                entities.gems = data.gems.map(g => new Gem(g.x, g.y, g.color));
+            }
+            // El cliente recibe disparos ejecutados por otros jugadores
+            if (data.type === 'spawn_bullet') {
+                entities.bullets.push(new Bullet(data.x, data.y, data.angle, data.color));
             }
         });
     });
