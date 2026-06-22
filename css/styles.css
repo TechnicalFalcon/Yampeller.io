@@ -1,0 +1,218 @@
+* {
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+user-select: none;
+-webkit-user-select: none;
+touch-action: none;
+}
+
+body, html {
+width: 100%;
+height: 100%;
+overflow: hidden;
+background-color: #020206;
+font-family: 'Courier New', Courier, monospace;
+color: #ffffff;
+}
+
+canvas {
+display: block;
+position: absolute;
+top: 0;
+left: 0;
+width: 100vw;
+height: 100vh;
+z-index: 1;
+}
+
+#fullscreen-btn {
+position: absolute;
+top: 15px;
+right: 15px;
+z-index: 20;
+background: transparent;
+color: #ffffff;
+border: 2px solid #ffffff;
+padding: 8px 12px;
+font-family: 'Courier New', Courier, monospace;
+font-weight: bold;
+font-size: 0.9rem;
+cursor: pointer;
+box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+text-shadow: 0 0 5px #ffffff;
+transition: all 0.2s;
+}
+
+#fullscreen-btn:hover {
+background: rgba(255, 255, 255, 0.2);
+box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+}
+
+.screen {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+z-index: 10;
+transition: opacity 0.3s ease;
+padding: 20px;
+}
+
+.hidden {
+opacity: 0;
+visibility: hidden;
+pointer-events: none;
+}
+
+#menu-screen h1 {
+font-size: 4.5rem;
+font-weight: bold;
+color: #ffffff;
+letter-spacing: 2px;
+text-shadow: 0 0 10px #ffffff, 0 0 20px #ffffff, 0 0 30px rgba(255,255,255,0.3);
+margin-bottom: 40px;
+text-align: center;
+}
+
+.menu-ui-container {
+display: flex;
+flex-direction: column;
+gap: 20px;
+width: 100%;
+max-width: 350px;
+}
+
+.neon-input {
+width: 100%;
+background: transparent;
+border: 4px solid #ffffff;
+color: #ffffff;
+padding: 15px;
+font-size: 1.5rem;
+text-align: center;
+font-family: 'Courier New', Courier, monospace;
+font-weight: bold;
+outline: none;
+box-shadow: 0 0 15px rgba(255, 255, 255, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.3);
+text-shadow: 0 0 5px #ffffff;
+}
+
+.button-row {
+display: flex;
+gap: 20px;
+width: 100%;
+}
+
+.neon-btn {
+flex: 1;
+background: transparent;
+color: #ffffff;
+font-size: 1.5rem;
+font-family: 'Courier New', Courier, monospace;
+font-weight: bold;
+padding: 15px 0;
+cursor: pointer;
+outline: none;
+transition: all 0.2s ease;
+}
+
+.neon-red {
+border: 4px solid #ff003c;
+box-shadow: 0 0 15px rgba(255, 0, 60, 0.5), inset 0 0 10px rgba(255, 0, 60, 0.3);
+text-shadow: 0 0 5px #ffffff;
+}
+
+.neon-red:hover {
+background: rgba(255, 0, 60, 0.2);
+box-shadow: 0 0 25px rgba(255, 0, 60, 0.8);
+}
+
+.neon-blue {
+border: 4px solid #00d5ff;
+box-shadow: 0 0 15px rgba(0, 213, 255, 0.5), inset 0 0 10px rgba(0, 213, 255, 0.3);
+text-shadow: 0 0 5px #ffffff;
+}
+
+.neon-blue:hover {
+background: rgba(0, 213, 255, 0.2);
+box-shadow: 0 0 25px rgba(0, 213, 255, 0.8);
+}
+
+#hud {
+position: absolute;
+top: 0; left: 0; width: 100%; 
+height: 100%;
+pointer-events: none; 
+z-index: 5; 
+display: none;
+padding: 20px;
+}
+
+#score-container {
+position: absolute;
+top: 20px;
+left: 20px;
+background: rgba(0, 0, 0, 0.6);
+border: 2px solid #00d5ff;
+padding: 10px 20px;
+color: #00d5ff;
+font-size: 1.5rem;
+font-weight: bold;
+text-shadow: 0 0 8px #00d5ff;
+box-shadow: 0 0 15px rgba(0, 213, 255, 0.3);
+}
+
+#health-container {
+position: absolute;
+bottom: 30px; 
+left: 50%; 
+transform: translateX(-50%); 
+width: 280px;
+background: rgba(0, 0, 0, 0.8); 
+border: 2px solid #ff003c; 
+padding: 4px;
+box-shadow: 0 0 20px rgba(255, 0, 60, 0.4);
+}
+
+#health-bar {
+height: 16px; 
+width: 100%; 
+background: linear-gradient(90deg, #ff003c, #ff5e78); 
+box-shadow: 0 0 10px #ff003c; 
+transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+position: relative;
+overflow: hidden;
+}
+
+#health-bar::after {
+content: '';
+position: absolute;
+top: 0; left: 0; width: 100%; height: 100%;
+background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+animation: scanner 2s infinite linear;
+}
+
+@keyframes scanner {
+0% { transform: translateX(-100%); }
+100% { transform: translateX(100%); }
+}
+
+.stat-label { 
+font-size: 0.7rem; 
+color: #ff003c; 
+margin-bottom: 2px; 
+text-align: center;
+letter-spacing: 1px;
+}
+
+@media (max-width: 600px) {
+#menu-screen h1 { font-size: 3rem; margin-bottom: 25px; }
+.neon-input { font-size: 1.2rem; padding: 12px; }
+.neon-btn { font-size: 1.2rem; padding: 12px 0; }
+}
