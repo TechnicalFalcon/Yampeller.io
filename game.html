@@ -1,35 +1,44 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Yampeller.io</title>
-<link rel="stylesheet" href="css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yampeller.io</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<button id="fullscreen-btn">Fullscreen</button>
-<div id="menu-screen" class="screen">
-<h1>Yampeller.io</h1>
-<div class="menu-ui-container">
-<input type="text" id="player-name" class="neon-input" placeholder="Name" autocomplete="off" maxlength="12">
-<div class="button-row">
-<button id="play-btn" class="neon-btn neon-red">Play</button>
-<button id="party-btn" class="neon-btn neon-blue">Party</button>
-</div>
-</div>
-</div>
+    <button id="fullscreen-btn">Fullscreen</button>
 
-<div id="hud">
-<div id="score-container">
-SCORE: <span id="score-val">0</span>
-</div>
-<div id="health-container">
-<div class="stat-label">ENERGY LEVEL</div>
-<div id="health-bar"></div>
-</div>
-</div>
+    <div id="menu-screen" class="screen">
+        <h1>Yampeller.io</h1>
+        <div class="menu-ui-container">
+            <input type="text" id="player-name" class="neon-input" placeholder="Name" autocomplete="off" maxlength="12">
+            <div class="button-row">
+                <button id="play-btn" class="neon-btn neon-red">Play</button>
+                <button id="party-btn" class="neon-btn neon-blue">Party</button>
+            </div>
+            
+            <div id="party-options" style="display: none; margin-top: 15px;">
+                <button id="host-btn" class="neon-btn">Crear Sala</button>
+                <button id="join-btn" class="neon-btn">Unirse a Sala</button>
+                <div id="room-info" style="margin-top: 10px; color: #fff;"></div>
+            </div>
+        </div>
+    </div>
 
-<canvas id="gameCanvas"></canvas>
-<script src="scripts/draw.js"></script>
+    <div id="hud" style="display: none;"> <div id="score-container">
+            SCORE: <span id="score-val">0</span>
+        </div>
+        <div id="health-container">
+            <div class="stat-label">ENERGY LEVEL</div>
+            <div id="health-bar"></div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    
+    <script src="scripts/draw.js"></script>
 </body>
 </html>
