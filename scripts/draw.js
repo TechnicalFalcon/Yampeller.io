@@ -9,6 +9,9 @@ const fullscreenBtn = document.getElementById('fullscreen-btn');
 const scoreVal = document.getElementById('score-val');
 const healthBar = document.getElementById('health-bar');
 
+const shotSound = new Howl({ src: ['sfx/ship_shot.wav'], volume: 0.5, preload: true });
+const noShotSound = new Howl({ src: ['sfx/no_shot.wav'], volume: 0.5, preload: true });
+
 let gameActive = false;
 const arenaSize = 4000; 
 let dpr = window.devicePixelRatio || 1;
@@ -19,13 +22,12 @@ let planets = [];
 const numStars = 4050; 
 let nebulaCache = null; 
 
-// --- VARIABLES MULTIJUGADOR ---
 let peer = null;
 let connection = null;       
 let connectedPlayers = {};   
 let isHost = false;
 let isMultiplayer = false;
-// ------------------------------//
+
 function initCosmos(customCosmos = null) {
 stars = [];
 nebulae = [];
@@ -299,7 +301,8 @@ ctx.restore();
 }
 shoot() {
 const now = Date.now();
-if (now - this.lastShot >= 160) {
+if (now - this.lastShot >= 60) {
+shotSound.play();
 const cos = Math.cos(this.angle); const sin = Math.sin(this.angle);
 const bx = this.x + cos * 25;
 const by = this.y + sin * 25;
@@ -579,7 +582,6 @@ if(!isMobileDevice && isMouseDown) player.shoot();
 if(isMobileDevice && aimJoystick.active) player.shoot();
 player.update();
 
-//MILTI PLAYER DATA
 if (isMultiplayer) {
 if (isHost) {
 let dataToSend = { ...connectedPlayers };
@@ -600,7 +602,6 @@ vy: player.vy
         }
     }
 }
-//---------------------------------
 ctx.strokeStyle = 'rgba(0, 213, 255, 0.02)'; ctx.lineWidth = 1;
 for(let x = 0; x <= arenaSize; x += 400) {
 ctx.beginPath(); ctx.moveTo(x - camX, 0 - camY); ctx.lineTo(x - camX, arenaSize - camY); ctx.stroke();
@@ -651,7 +652,6 @@ entities.bullets.splice(i, 1);
     }
 }
 
-//RIVALS
 Object.keys(connectedPlayers).forEach(id => {
 if (!isHost && id === peer.id) return; 
 let p = connectedPlayers[id];
@@ -734,6 +734,7 @@ aimJoystick.active = false;
 aimJoystick.moveX = 0; aimJoystick.moveY = 0;
 aimJoystick.curX = aimJoystick.startX; aimJoystick.curY = aimJoystick.startY;
 aimJoystick.id = null;
+noShotSound.play();
         }
     }
 });
@@ -759,7 +760,6 @@ partyOptions.style.display = partyOptions.style.display === 'none' ? 'block' : '
     }
 });
 
-// --- ENLACE MULTIJUGADOR AVANZADO ---
 document.getElementById('host-btn').addEventListener('click', () => {
 isHost = true;
 isMultiplayer = true;
@@ -829,11 +829,12 @@ entities.gems = data.gems.map(g => new Gem(g.x, g.y, g.color));
             }
 if (data.type === 'spawn_bullet') {
 entities.bullets.push(new Bullet(data.x, data.y, data.angle, data.color));
+shotSound.play();
             }
         });
     });
 });
-// -----------------------------------
+
 window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
 window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 window.addEventListener('mousemove', e => { 
@@ -844,5 +845,10 @@ mouse.moved = true;
 
 let isMouseDown = false;
 window.addEventListener('mousedown', e => { if(e.button === 0) isMouseDown = true; });
-window.addEventListener('mouseup', e => { if(e.button === 0) isMouseDown = false; });
+window.addEventListener('mouseup', e => { 
+if(e.button === 0 && isMouseDown) {
+isMouseDown = false;
+noShotSound.play();
+    } 
+});
 loop();
