@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Yampeller.io</title>
-<link rel="icon" href="ico.png" type="image/x-icon">
+<link rel="icon" href="icon.png" type="image/x-icon">
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -27,14 +27,20 @@
 <div id="hud" style="display: none;"> <div id="score-container">
 SCORE: <span id="score-val">0</span>
 </div>
+
 <div id="health-container">
 <div class="stat-label">HP</div>
 <div id="health-bar"></div>
+</div>
+
+<div id="special-container">
+<div class="stat-label Specs">Special Attack</div>
+<div id="special-bar"></div>
 </div>
 </div>
 <canvas id="gameCanvas"></canvas>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
-<script src="scripts/draw.js"></script>
+<script src="scripts/draws.js"></script>
 </body>
 </html>

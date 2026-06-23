@@ -163,7 +163,8 @@ initCosmos();
 let player;
 let keys = {};
 let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2, worldX: 0, worldY: 0, moved: false };
-let entities = { bullets: [], gems: [], particles: [] };
+// Se añaden asteroides y crashers a las entidades globales
+let entities = { bullets: [], gems: [], particles: [], asteroids: [], crashers: [] };
 
 let isMobileDevice = false;
 window.addEventListener('touchstart', function detectTouch() {
@@ -384,6 +385,84 @@ ctx.restore();
     }
 }
 
+// NUEVA CLASE: Asteroides geométricos procedimentales
+class Asteroid {
+    constructor(x, y, radius) {
+        this.x = x !== undefined ? x : Math.random() * arenaSize;
+        this.y = y !== undefined ? y : Math.random() * arenaSize;
+        this.radius = radius || Math.random() * 25 + 15;
+        this.vx = Math.random() * 2 - 1;
+        this.vy = Math.random() * 2 - 1;
+        this.edges = Math.floor(Math.random() * 5) + 7;
+        this.points = [];
+        for (let i = 0; i < this.edges; i++) {
+            let angle = (i / this.edges) * Math.PI * 2;
+            let offset = Math.random() * (this.radius * 0.4) - (this.radius * 0.2);
+            this.points.push({
+                x: Math.cos(angle) * (this.radius + offset),
+                y: Math.sin(angle) * (this.radius + offset)
+            });
+        }
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > arenaSize) this.vx *= -1;
+        if (this.y < 0 || this.y > arenaSize) this.vy *= -1;
+    }
+    draw(camX, camY) {
+        ctx.save();
+        ctx.translate(this.x - camX, this.y - camY);
+        ctx.strokeStyle = '#4e5d6c';
+        ctx.lineWidth = 2.5;
+        ctx.fillStyle = '#1c242c';
+        ctx.beginPath();
+        ctx.moveTo(this.points[0].x, this.points[0].y);
+        for (let i = 1; i < this.points.length; i++) {
+            ctx.lineTo(this.points[i].x, this.points[i].y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+// NUEVA CLASE: Enemigos Crashers que persiguen al jugador más cercano
+class Crasher {
+    constructor(x, y) {
+        this.x = x !== undefined ? x : Math.random() * arenaSize;
+        this.y = y !== undefined ? y : Math.random() * arenaSize;
+        this.radius = 16;
+        this.speed = 2.2;
+        this.angle = 0;
+    }
+    update(targetX, targetY) {
+        this.angle = Math.atan2(targetY - this.y, targetX - this.x);
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed;
+    }
+    draw(camX, camY) {
+        ctx.save();
+        ctx.translate(this.x - camX, this.y - camY);
+        ctx.rotate(this.angle);
+        ctx.strokeStyle = '#ff3333';
+        ctx.lineWidth = 2;
+        ctx.fillStyle = '#2a0808';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff3333';
+        ctx.beginPath();
+        ctx.moveTo(18, 0);
+        ctx.lineTo(-12, -12);
+        ctx.lineTo(-6, 0);
+        ctx.lineTo(-12, 12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
 function generateGemsArray() {
 let arr = [];
 for(let i=0; i<90; i++) {
@@ -396,17 +475,33 @@ color: Math.random() > 0.5 ? '#00ffaa' : '#ff00aa'
 return arr;
 }
 
-function startGame(gemsData = null) {
+function startGame(gemsData = null, asteroidData = null, crasherData = null) {
 let name = playerNameInput.value.trim();
 if(!name) name = "Player";
 player = new Player(arenaSize/2, arenaSize/2, name);
 entities.bullets = []; entities.gems = []; entities.particles = [];
+entities.asteroids = []; entities.crashers = [];
+
 if (gemsData) {
 gemsData.forEach(g => entities.gems.push(new Gem(g.x, g.y, g.color)));
 } else {
 const localGems = generateGemsArray();
 localGems.forEach(g => entities.gems.push(new Gem(g.x, g.y, g.color)));
 }
+
+// Inicialización de Asteroides y Crashers si vienen del Host o locales
+if (asteroidData) {
+    asteroidData.forEach(a => entities.asteroids.push(new Asteroid(a.x, a.y, a.radius)));
+} else {
+    for(let i=0; i<25; i++) entities.asteroids.push(new Asteroid());
+}
+
+if (crasherData) {
+    crasherData.forEach(c => entities.crashers.push(new Crasher(c.x, c.y)));
+} else {
+    for(let i=0; i<12; i++) entities.crashers.push(new Crasher());
+}
+
 gameActive = true;
 menuScreen.classList.add('hidden');
 hud.style.display = 'block';
@@ -582,12 +677,15 @@ if(!isMobileDevice && isMouseDown) player.shoot();
 if(isMobileDevice && aimJoystick.active) player.shoot();
 player.update();
 
+// Lógica de Red Multijugador sincronizando Asteroides y Crashers
 if (isMultiplayer) {
 if (isHost) {
 let dataToSend = { ...connectedPlayers };
 dataToSend['host'] = { x: player.x, y: player.y, angle: player.angle, name: player.name, vx: player.vx, vy: player.vy };
 let gemsData = entities.gems.map(g => ({ x: g.x, y: g.y, color: g.color }));
-broadcastToClients({ type: 'host_update', players: dataToSend, gems: gemsData });
+let asteroidData = entities.asteroids.map(a => ({ x: a.x, y: a.y, radius: a.radius }));
+let crasherData = entities.crashers.map(c => ({ x: c.x, y: c.y }));
+broadcastToClients({ type: 'host_update', players: dataToSend, gems: gemsData, asteroids: asteroidData, crashers: crasherData });
 } else {
 if (connection && connection.open) {
 connection.send({
@@ -602,6 +700,8 @@ vy: player.vy
         }
     }
 }
+
+// Dibujado de Grid y límites de Arena
 ctx.strokeStyle = 'rgba(0, 213, 255, 0.02)'; ctx.lineWidth = 1;
 for(let x = 0; x <= arenaSize; x += 400) {
 ctx.beginPath(); ctx.moveTo(x - camX, 0 - camY); ctx.lineTo(x - camX, arenaSize - camY); ctx.stroke();
@@ -613,6 +713,8 @@ ctx.strokeStyle = 'rgba(0, 213, 255, 0.2)'; ctx.lineWidth = 3;
 ctx.shadowBlur = 10; ctx.shadowColor = '#00d5ff';
 ctx.strokeRect(-camX, -camY, arenaSize, arenaSize);
 ctx.shadowBlur = 0; 
+
+// Partículas
 for(let i = entities.particles.length - 1; i >= 0; i--) {
 let p = entities.particles[i];
 p.update();
@@ -620,6 +722,7 @@ p.draw(camX, camY);
 if (p.life <= 0) entities.particles.splice(i, 1);
 }
 
+// Bucle de Gemas original intacto
 for(let i = entities.gems.length - 1; i >= 0; i--) {
 let g = entities.gems[i]; 
 g.draw(camX, camY);
@@ -642,16 +745,77 @@ entities.gems.push(new Gem());
     }
 }
 
+// NUEVA LÓGICA: Procesado y colisiones de Asteroides
+for(let i = entities.asteroids.length - 1; i >= 0; i--) {
+    let a = entities.asteroids[i];
+    a.update();
+    a.draw(camX, camY);
+    // Colisión jugador con asteroide
+    if (Math.hypot(player.x - a.x, player.y - a.y) < player.radius + a.radius) {
+        player.health -= 0.5;
+        healthBar.style.width = Math.max(0, player.health) + '%';
+        createExplosion(player.x, player.y, '#4e5d6c', 2);
+    }
+}
+
+// NUEVA LÓGICA: Procesado y colisiones de Enemigos Crashers
+for(let i = entities.crashers.length - 1; i >= 0; i--) {
+    let c = entities.crashers[i];
+    // Persigue al jugador local de forma predeterminada
+    c.update(player.x, player.y);
+    c.draw(camX, camY);
+    
+    // Colisión del Crasher contra el jugador
+    if (Math.hypot(player.x - c.x, player.y - c.y) < player.radius + c.radius) {
+        player.health -= 1.5;
+        healthBar.style.width = Math.max(0, player.health) + '%';
+        createExplosion(c.x, c.y, '#ff3333', 10);
+        entities.crashers.splice(i, 1);
+        if(isHost || !isMultiplayer) entities.crashers.push(new Crasher());
+    }
+}
+
+// Balas e impactos contra asteroides/enemigos
 for(let i = entities.bullets.length - 1; i >= 0; i--) {
 let b = entities.bullets[i]; 
 b.update(); 
 b.draw(camX, camY);
-if(b.x < 0 || b.x > arenaSize || b.y < 0 || b.y > arenaSize || b.life <= 0) {
+
+let bulletDestroyed = false;
+
+// Impacto bala con asteroides
+for(let j = entities.asteroids.length - 1; j >= 0; j--) {
+    let a = entities.asteroids[j];
+    if(Math.hypot(b.x - a.x, b.y - a.y) < a.radius) {
+        createExplosion(b.x, b.y, a.color, 6);
+        bulletDestroyed = true;
+        break;
+    }
+}
+
+// Impacto bala con crashers
+if(!bulletDestroyed) {
+    for(let k = entities.crashers.length - 1; k >= 0; k--) {
+        let c = entities.crashers[k];
+        if(Math.hypot(b.x - c.x, b.y - c.y) < c.radius) {
+            createExplosion(c.x, c.y, '#ff3333', 12);
+            entities.crashers.splice(k, 1);
+            if(isHost || !isMultiplayer) entities.crashers.push(new Crasher());
+            player.score += 25;
+            scoreVal.innerText = player.score;
+            bulletDestroyed = true;
+            break;
+        }
+    }
+}
+
+if(b.x < 0 || b.x > arenaSize || b.y < 0 || b.y > arenaSize || b.life <= 0 || bulletDestroyed) {
 createExplosion(b.x, b.y, b.color, 4); 
 entities.bullets.splice(i, 1);
     }
 }
 
+// Jugadores Conectados
 Object.keys(connectedPlayers).forEach(id => {
 if (!isHost && id === peer.id) return; 
 let p = connectedPlayers[id];
@@ -789,7 +953,9 @@ conn.on('open', () => {
 conn.send({ 
 type: 'init_world', 
 gems: entities.gems.map(g => ({ x: g.x, y: g.y, color: g.color })),
-cosmos: { nebulae: nebulae, planets: planets, stars: stars }
+cosmos: { nebulae: nebulae, planets: planets, stars: stars },
+asteroids: entities.asteroids.map(a => ({ x: a.x, y: a.y, radius: a.radius })),
+crashers: entities.crashers.map(c => ({ x: c.x, y: c.y }))
     });
 });
 conn.on('data', (data) => {
@@ -821,11 +987,13 @@ connection = peer.connect(targetId);
 connection.on('data', (data) => {
 if (data.type === 'init_world') {
 initCosmos(data.cosmos);
-startGame(data.gems);
+startGame(data.gems, data.asteroids, data.crashers);
             }
 if (data.type === 'host_update') {
 connectedPlayers = data.players;
 entities.gems = data.gems.map(g => new Gem(g.x, g.y, g.color));
+entities.asteroids = data.asteroids.map(a => new Asteroid(a.x, a.y, a.radius));
+entities.crashers = data.crashers.map(c => new Crasher(c.x, c.y));
             }
 if (data.type === 'spawn_bullet') {
 entities.bullets.push(new Bullet(data.x, data.y, data.angle, data.color));
