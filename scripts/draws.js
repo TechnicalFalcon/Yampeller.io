@@ -27,6 +27,7 @@ let connection = null;
 let connectedPlayers = {};   
 let isHost = false;
 let isMultiplayer = false;
+let networkTick = 0;
 
 function initCosmos(customCosmos = null) {
 stars = [];
@@ -583,11 +584,12 @@ if(isMobileDevice && aimJoystick.active) player.shoot();
 player.update();
 
 if (isMultiplayer) {
+networkTick++;
+if (networkTick % 3 === 0) {
 if (isHost) {
 let dataToSend = { ...connectedPlayers };
 dataToSend['host'] = { x: player.x, y: player.y, angle: player.angle, name: player.name, vx: player.vx, vy: player.vy };
-let gemsData = entities.gems.map(g => ({ x: g.x, y: g.y, color: g.color }));
-broadcastToClients({ type: 'host_update', players: dataToSend, gems: gemsData });
+broadcastToClients({ type: 'host_update', players: dataToSend });
 } else {
 if (connection && connection.open) {
 connection.send({
@@ -601,6 +603,7 @@ vy: player.vy
             });
         }
     }
+}
 }
 ctx.strokeStyle = 'rgba(0, 213, 255, 0.02)'; ctx.lineWidth = 1;
 for(let x = 0; x <= arenaSize; x += 400) {
@@ -626,17 +629,19 @@ g.draw(camX, camY);
 if(Math.hypot(player.x - g.x, player.y - g.y) < player.radius + g.radius) {
 player.score += 10; scoreVal.innerText = player.score;
 createExplosion(g.x, g.y, g.color, 8); 
+entities.gems.splice(i, 1); 
 if (isMultiplayer) {
 if (isHost) {
-entities.gems.splice(i, 1); 
-entities.gems.push(new Gem()); 
+broadcastToClients({ type: 'gem_collected_by_anyone', index: i });
+let newGem = new Gem();
+entities.gems.push(newGem);
+broadcastToClients({ type: 'gem_spawned', x: newGem.x, y: newGem.y, color: newGem.color });
 } else {
 if (connection && connection.open) {
-connection.send({ type: 'gem_collected', index: i });
+connection.send({ type: 'client_gem_collected', index: i });
         }
     }
 } else {
-entities.gems.splice(i, 1); 
 entities.gems.push(new Gem());
         }
     }
@@ -798,12 +803,16 @@ connectedPlayers[conn.peer] = { x: data.x, y: data.y, angle: data.angle, name: d
     }
 if (data.type === 'spawn_bullet') {
 entities.bullets.push(new Bullet(data.x, data.y, data.angle, data.color));
+shotSound.play();
 broadcastToClients({ type: 'spawn_bullet', x: data.x, y: data.y, angle: data.angle, color: data.color });
     }
-if (data.type === 'gem_collected') {
+if (data.type === 'client_gem_collected') {
 if (entities.gems[data.index]) {
 entities.gems.splice(data.index, 1);
-entities.gems.push(new Gem());
+broadcastToClients({ type: 'gem_collected_by_anyone', index: data.index });
+let newGem = new Gem();
+entities.gems.push(newGem);
+broadcastToClients({ type: 'gem_spawned', x: newGem.x, y: newGem.y, color: newGem.color });
                 }
             }
         });
@@ -825,11 +834,18 @@ startGame(data.gems);
             }
 if (data.type === 'host_update') {
 connectedPlayers = data.players;
-entities.gems = data.gems.map(g => new Gem(g.x, g.y, g.color));
             }
 if (data.type === 'spawn_bullet') {
 entities.bullets.push(new Bullet(data.x, data.y, data.angle, data.color));
 shotSound.play();
+            }
+if (data.type === 'gem_collected_by_anyone') {
+if (entities.gems[data.index]) {
+entities.gems.splice(data.index, 1);
+                }
+            }
+if (data.type === 'gem_spawned') {
+entities.gems.push(new Gem(data.x, data.y, data.color));
             }
         });
     });

@@ -70,14 +70,56 @@ canvas {
     pointer-events: none;
 }
 
-#menu-screen h1 {
-    font-size: 4.5rem;
-    font-weight: bold;
+.logo-horizon {
+    font-family: 'Arial Black', 'Impact', sans-serif;
+    font-size: 5.5rem;
+    font-weight: 900;
     color: #ffffff;
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px #ffffff, 0 0 20px #ffffff, 0 0 30px rgba(255,255,255,0.3);
+    letter-spacing: 0px;
     margin-bottom: 40px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-text {
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
+}
+
+.logo-o-container {
+    position: relative;
+    display: inline-grid;
+    grid-template-areas: "overlay";
+    width: 9.5rem;
+    height: 9.5rem;
+    margin: 0 -2.2rem;
+    vertical-align: middle;
+}
+
+.arc-img {
+    grid-area: overlay;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.arc0 {
+    animation: rotateRight 12s infinite linear;
+}
+
+.arc1 {
+    animation: rotateLeft 16s infinite linear;
+}
+
+@keyframes rotateRight {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes rotateLeft {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(-360deg); }
 }
 
 .menu-ui-container {
@@ -241,11 +283,6 @@ canvas {
     animation: scanner 2s infinite linear;
 }
 
-@keyframes scanner {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-
 .stat-label.Specs { 
     font-size: 0.7rem; 
     color: #fff200; 
@@ -255,9 +292,48 @@ canvas {
 }
 
 @media (max-width: 600px) {
-    #menu-screen h1 { font-size: 3rem; margin-bottom: 25px; }
+    .logo-horizon { font-size: 3.5rem; margin-bottom: 25px; }
+    .logo-o-container { width: 5.8rem; height: 5.8rem; margin: 0 0rem; }
     .neon-input { font-size: 1.2rem; padding: 12px; }
     .neon-btn { font-size: 1.2rem; padding: 12px 0; }
+}
+
+/* ==========================================================================
+   REGLAS ESPECÍFICAS PARA MÓVIL EN MODO HORIZONTAL (LANDSCAPE ACORTADO)
+   ========================================================================== */
+@media (max-height: 500px) and (orientation: landscape) {
+    .logo-horizon { 
+        font-size: 2.4rem; 
+        margin-bottom: 10px; 
+    }
+    .logo-o-container { 
+        width: 3.8rem; 
+        height: 3.8rem; 
+        margin: 0 -0.8rem; 
+    }
+    .menu-ui-container { 
+        gap: 8px; 
+        max-width: 280px; 
+    }
+    .neon-input { 
+        font-size: 0.95rem; 
+        padding: 6px; 
+        border-width: 2px; 
+    }
+    .neon-btn { 
+        font-size: 0.95rem; 
+        padding: 6px 0; 
+        border-width: 2px; 
+    }
+    #party-options { 
+        gap: 8px; 
+        margin-top: 5px; 
+    }
+    #room-info { 
+        padding: 6px; 
+        font-size: 0.75rem; 
+        margin-top: 5px; 
+    }
 }
 
 /* ==========================================================================
