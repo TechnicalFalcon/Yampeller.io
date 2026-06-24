@@ -93,7 +93,7 @@ canvas {
     grid-template-areas: "overlay";
     width: 9.5rem;
     height: 9.5rem;
-    margin: 0 -2.2rem;
+    margin: 0 -1.2rem;
     vertical-align: middle;
 }
 
@@ -290,6 +290,46 @@ canvas {
     text-align: center;
     letter-spacing: 1px;
 }
+
+/*ENERGY BAR*/
+#energy-container {
+    position: absolute;
+    bottom: 30px; 
+    right: 70%; 
+    transform: translateX(50%); 
+    width: 280px;
+    background: rgba(0, 0, 0, 0.8); 
+    border: 2px solid #2dfd29; 
+    padding: 4px;
+    box-shadow: 0 0 20px rgba(45, 253, 41, 0.4);
+}
+
+#energy-bar {
+    height: 16px; 
+    width: 100%; 
+    background: linear-gradient(90deg, #2dfd29, #5eff5e); 
+    box-shadow: 0 0 10px #2dfd29; 
+    transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+}
+
+#energy-bar::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: scanner 2s infinite linear;
+}
+
+.stat-label.energy { 
+    font-size: 0.7rem; 
+    color: #2dfd29; 
+    margin-bottom: 2px; 
+    text-align: center;
+    letter-spacing: 1px;
+}
+
 
 @media (max-width: 600px) {
     .logo-horizon { font-size: 3.5rem; margin-bottom: 25px; }
