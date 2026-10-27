@@ -9,7 +9,6 @@ const fullscreenBtn = document.getElementById('fullscreen-btn');
 const scoreVal = document.getElementById('score-val');
 const healthBar = document.getElementById('health-bar');
 
-// --- ELEMENTOS DEL DOM PARA LAS BARRAS ---
 const specialBar = document.getElementById('special-bar');
 const energyBar = document.getElementById('energy-bar');
 
@@ -23,8 +22,8 @@ let dpr = window.devicePixelRatio || 1;
 let stars = [];
 let nebulae = [];
 let planets = []; 
-let blackHoles = []; // Nueva lista para los agujeros negros del fondo
-const numStars = 6000; // Más estrellas para un entorno denso y caótico
+let blackHoles = []; 
+const numStars = 6000; 
 let nebulaCache = null; 
 
 let peer = null;
@@ -40,10 +39,9 @@ let specialCooldown = false;
 let specialLaserActive = false;
 let specialLaserTimer = 0; 
 
-// --- SISTEMA DE INFIERNO CÓSMICO (DECORACIÓN PURAMENTE ESTÉTICA) ---
 let backgroundBots = [];
-let backgroundBullets = []; // Balas exclusivas del fondo (no hacen daño al jugador)
-const numBackgroundBots = 45; // ¡Súper caótico! Muchas naves peleando en segundo plano
+let backgroundBullets = []; 
+const numBackgroundBots = 45; 
 
 class BackgroundBot {
     constructor() {
@@ -58,11 +56,9 @@ class BackgroundBot {
         this.speed = Math.random() * 3 + 2;
         this.radius = Math.random() * 12 + 10;
         
-        // Diseños de naves: 'interceptor', 'cruiser', 'fighter', 'drone'
         const designs = ['interceptor', 'cruiser', 'fighter', 'drone'];
         this.design = designs[Math.floor(Math.random() * designs.length)];
         
-        // Paleta infernal para las naves decorativas
         const infernalColors = ['#ff3300', '#ffaa00', '#ff0055', '#7700aa', '#e60000'];
         this.color = infernalColors[Math.floor(Math.random() * infernalColors.length)];
         
@@ -70,12 +66,11 @@ class BackgroundBot {
         this.targetY = Math.random() * arenaSize;
         this.decisionTimer = Math.random() * 60 + 40;
         this.lastShot = 0;
-        this.shootCooldown = Math.random() * 600 + 400; // Disparan muy rápido para simular guerra
+        this.shootCooldown = Math.random() * 600 + 400; 
     }
     update() {
         this.decisionTimer--;
         if (this.decisionTimer <= 0) {
-            // IA caótica: ir a puntos aleatorios a máxima velocidad o seguir a otros bots cercanos
             if (Math.random() > 0.5 && backgroundBots.length > 1) {
                 let randomBot = backgroundBots[Math.floor(Math.random() * backgroundBots.length)];
                 if (randomBot !== this) {
@@ -106,7 +101,6 @@ class BackgroundBot {
             this.reset();
         }
 
-        // Estela de fuego/plasma infernal
         if (Math.random() > 0.2) {
             let trailAngle = this.angle + Math.PI + (Math.random() * 0.5 - 0.25);
             entities.particles.push(new Particle(
@@ -121,7 +115,6 @@ class BackgroundBot {
             ));
         }
 
-        // Disparos decorativos automáticos entre bots
         let now = Date.now();
         if (now - this.lastShot > this.shootCooldown) {
             for (let i = 0; i < backgroundBots.length; i++) {
@@ -148,11 +141,10 @@ class BackgroundBot {
         ctx.shadowColor = this.color;
         ctx.strokeStyle = this.color;
         ctx.lineWidth = 2;
-        ctx.fillStyle = 'rgba(20, 5, 5, 0.85)'; // Cabinas oscuras con tinte rojizo
+        ctx.fillStyle = 'rgba(20, 5, 5, 0.85)'; 
 
         ctx.beginPath();
         if (this.design === 'interceptor') {
-            // Diseño 1: Triángulo agresivo estilizado con alas dobles
             ctx.moveTo(this.radius * 1.3, 0);
             ctx.lineTo(-this.radius * 0.8, -this.radius * 0.9);
             ctx.lineTo(-this.radius * 0.3, -this.radius * 0.3);
@@ -160,7 +152,6 @@ class BackgroundBot {
             ctx.lineTo(-this.radius * 0.3, this.radius * 0.3);
             ctx.lineTo(-this.radius * 0.8, this.radius * 0.9);
         } else if (this.design === 'cruiser') {
-            // Diseño 2: Nave pesada con alas invertidas hacia adelante
             ctx.moveTo(this.radius * 1.1, 0);
             ctx.lineTo(this.radius * 0.4, -this.radius * 0.5);
             ctx.lineTo(-this.radius * 0.6, -this.radius * 1.1);
@@ -170,7 +161,6 @@ class BackgroundBot {
             ctx.lineTo(-this.radius * 0.6, this.radius * 1.1);
             ctx.lineTo(this.radius * 0.4, this.radius * 0.5);
         } else if (this.design === 'fighter') {
-            // Diseño 3: Caza geométrico en forma de rombo de ataque
             ctx.moveTo(this.radius * 1.4, 0);
             ctx.lineTo(0, -this.radius * 0.7);
             ctx.lineTo(-this.radius * 0.9, -this.radius * 0.4);
@@ -178,7 +168,6 @@ class BackgroundBot {
             ctx.lineTo(-this.radius * 0.9, this.radius * 0.4);
             ctx.lineTo(0, this.radius * 0.7);
         } else {
-            // Diseño 4: Dron avanzado alienígena / hexagonal
             ctx.moveTo(this.radius, 0);
             ctx.lineTo(this.radius * 0.3, -this.radius * 0.8);
             ctx.lineTo(-this.radius * 0.7, -this.radius * 0.8);
@@ -193,7 +182,6 @@ class BackgroundBot {
     }
 }
 
-// Balas puramente decorativas del fondo (no interactúan con las mecánicas lógicas del jugador)
 class BackgroundBullet {
     constructor(x, y, angle, color) {
         this.x = x;
@@ -212,13 +200,12 @@ class BackgroundBullet {
             entities.particles.push(new Particle(this.x, this.y, 0, 0, 1.2, this.color, 8, 'trail'));
         }
 
-        // Colisión meramente visual entre las naves decorativas y las balas decorativas
         for (let i = 0; i < backgroundBots.length; i++) {
             let bot = backgroundBots[i];
             if (Math.hypot(this.x - bot.x, this.y - bot.y) < bot.radius) {
                 createExplosion(bot.x, bot.y, bot.color, 10);
                 this.life = 0;
-                bot.reset(); // Reaparece instantáneamente creando el bucle sin fin caótico
+                bot.reset(); 
                 break;
             }
         }
@@ -239,11 +226,9 @@ class BackgroundBullet {
     }
 }
 
-// Inicializar ejércitos del fondo
 for (let i = 0; i < numBackgroundBots; i++) {
     backgroundBots.push(new BackgroundBot());
 }
-
 
 function initCosmos(customCosmos = null) {
     stars = [];
@@ -257,12 +242,11 @@ function initCosmos(customCosmos = null) {
         stars = customCosmos.stars;
         if (customCosmos.blackHoles) blackHoles = customCosmos.blackHoles;
     } else {
-        // COLORES INFERNALES: Magma, Fuego, Sangre y Ceniza cósmica
         const colors = [
-            { r: 130, g: 15, b: 0, a: 0.28 },   // Rojo fuego intenso
-            { r: 90, g: 0, b: 30, a: 0.24 },    // Sangre oscura
-            { r: 140, g: 70, b: 0, a: 0.18 },   // Naranja magma ardiente
-            { r: 40, g: 0, b: 50, a: 0.15 }     // Púrpura de vacío corrupto
+            { r: 130, g: 15, b: 0, a: 0.28 },   
+            { r: 90, g: 0, b: 30, a: 0.24 },    
+            { r: 140, g: 70, b: 0, a: 0.18 },   
+            { r: 40, g: 0, b: 50, a: 0.15 }     
         ];
 
         for(let i = 0; i < 26; i++) {
@@ -275,12 +259,11 @@ function initCosmos(customCosmos = null) {
             });
         }
 
-        // Planetas infernales o destruidos por el caos
         const planetColors = [
-            { base: '#5e0b00', shadow: '#120000', atmos: '#ff4500', details: '#260400', glow: '#ff1a00' }, // Planeta de lava pura
-            { base: '#2b2625', shadow: '#0d0d0d', atmos: '#e67300', details: '#ffcc00', glow: '#ffaa00' }, // Planeta fracturado fundido
-            { base: '#1c0024', shadow: '#05000a', atmos: '#9933ff', details: '#4b0082', glow: '#cc33ff' }, // Gigante gaseoso de tormenta de plasma
-            { base: '#423824', shadow: '#14110b', atmos: '#ffaa44', details: '#1c170e', glow: '#ff8800' }  // Asteroide masivo de fundición
+            { base: '#5e0b00', shadow: '#120000', atmos: '#ff4500', details: '#260400', glow: '#ff1a00' }, 
+            { base: '#2b2625', shadow: '#0d0d0d', atmos: '#e67300', details: '#ffcc00', glow: '#ffaa00' }, 
+            { base: '#1c0024', shadow: '#05000a', atmos: '#9933ff', details: '#4b0082', glow: '#cc33ff' }, 
+            { base: '#423824', shadow: '#14110b', atmos: '#ffaa44', details: '#1c170e', glow: '#ff8800' }  
         ];
 
         for(let i = 0; i < 14; i++) {
@@ -317,7 +300,6 @@ function initCosmos(customCosmos = null) {
             });
         }
 
-        // GENERACIÓN DE AGUJEROS NEGROS DESTRUCTIVOS EN EL FONDO
         for (let i = 0; i < 4; i++) {
             blackHoles.push({
                 x: Math.random() * (arenaSize - 600) + 300,
@@ -327,7 +309,7 @@ function initCosmos(customCosmos = null) {
                 pulsePhase: Math.random() * Math.PI * 2,
                 rotationSpeed: Math.random() * 0.04 + 0.02,
                 currentRotation: Math.random() * Math.PI * 2,
-                depth: Math.random() * 0.2 + 0.35 // ParalaX intermedio profundo
+                depth: Math.random() * 0.2 + 0.35 
             });
         }
 
@@ -406,7 +388,8 @@ initCosmos();
 let player;
 let keys = {};
 let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2, worldX: 0, worldY: 0, moved: false };
-let entities = { bullets: [], gems: [], particles: [] };
+
+let entities = { bullets: [], gems: [], particles: [], bosses: [], bossBullets: [] };
 
 let isMobileDevice = false;
 window.addEventListener('touchstart', function detectTouch() {
@@ -640,7 +623,7 @@ class Gem {
         this.x = x !== undefined ? x : Math.random() * arenaSize; 
         this.y = y !== undefined ? y : Math.random() * arenaSize;
         this.radius = 5;
-        this.color = color || (Math.random() > 0.5 ? '#ff5500' : '#ff0055'); // Gemas de magma e infernales
+        this.color = color || (Math.random() > 0.5 ? '#ff5500' : '#ff0055'); 
         this.pulse = Math.random() * Math.PI;
     }
     draw(camX, camY) {
@@ -654,6 +637,171 @@ class Gem {
     }
 }
 
+class BossBullet {
+    constructor(x, y, angle) {
+        this.x = x; this.y = y; this.angle = angle;
+        this.vx = Math.cos(angle) * 7; 
+        this.vy = Math.sin(angle) * 7;
+        this.radius = 28; 
+        this.color = '#ff1100'; 
+        this.life = 250; 
+    }
+    update() { 
+        this.x += this.vx; this.y += this.vy; this.life--; 
+        entities.particles.push(new Particle(
+            this.x + (Math.random()-0.5)*30, 
+            this.y + (Math.random()-0.5)*30, 
+            this.vx * -0.2, this.vy * -0.2, 
+            Math.random()*4+2, '#ffaa00', 20, 'trail'
+        ));
+    }
+    draw(camX, camY) {
+        ctx.save();
+        ctx.translate(this.x - camX, this.y - camY);
+        ctx.fillStyle = '#111';
+        ctx.strokeStyle = this.color; ctx.lineWidth = 6;
+        ctx.shadowBlur = 30; ctx.shadowColor = this.color;
+        ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.restore();
+    }
+}
+
+class DestroyerDominator {
+    constructor(x, y) {
+        this.x = x; this.y = y;
+        this.radius = 120;
+        this.maxHealth = 10000;
+        this.health = 10000;
+        this.angle = 0;
+        this.lastShot = 0;
+        this.color = '#ff0044';
+        this.glowColor = '#ff3300';
+        this.pulse = 0;
+        this.isDead = false;
+    }
+    update() {
+        if (this.isDead || !player) return;
+
+        this.pulse += 0.05;
+
+        let dx = player.x - this.x;
+        let dy = player.y - this.y;
+        let dist = Math.hypot(dx, dy);
+        
+        if (dist < 1800) { 
+            let targetAngle = Math.atan2(dy, dx);
+            let angleDiff = targetAngle - this.angle;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            
+            this.angle += angleDiff * 0.015;
+
+            let now = Date.now();
+            if (now - this.lastShot > 2500 && Math.abs(angleDiff) < 0.35) {
+                this.lastShot = now;
+                for (let offset of [-45, 45]) {
+                    let bx = this.x + Math.cos(this.angle) * 130 - Math.sin(this.angle) * offset;
+                    let by = this.y + Math.sin(this.angle) * 130 + Math.cos(this.angle) * offset;
+                    entities.bossBullets.push(new BossBullet(bx, by, this.angle));
+                    createExplosion(bx, by, '#ff3300', 20);
+                }
+            }
+        }
+    }
+    draw(camX, camY) {
+        if (this.isDead) return;
+        ctx.save();
+        ctx.translate(this.x - camX, this.y - camY);
+        
+        let pulseGlow = Math.sin(this.pulse) * 10;
+        ctx.shadowBlur = 35 + pulseGlow;
+        ctx.shadowColor = this.glowColor;
+
+        ctx.rotate(this.angle);
+
+        ctx.fillStyle = '#0d0208';
+        ctx.strokeStyle = '#ff3300';
+        ctx.lineWidth = 4;
+
+        ctx.beginPath();
+        ctx.moveTo(-this.radius * 0.8, -this.radius * 1.3);
+        ctx.lineTo(this.radius * 0.2, -this.radius * 1.1);
+        ctx.lineTo(this.radius * 0.6, -this.radius * 0.5);
+        ctx.lineTo(-this.radius * 0.4, -this.radius * 0.3);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-this.radius * 0.8, this.radius * 1.3);
+        ctx.lineTo(this.radius * 0.2, this.radius * 1.1);
+        ctx.lineTo(this.radius * 0.6, this.radius * 0.5);
+        ctx.lineTo(-this.radius * 0.4, this.radius * 0.3);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = '#1a050d';
+        ctx.strokeStyle = '#ff0055';
+        ctx.lineWidth = 3;
+
+        ctx.fillRect(this.radius * 0.2, -50, this.radius * 1.1, 16);
+        ctx.strokeRect(this.radius * 0.2, -50, this.radius * 1.1, 16);
+        ctx.fillRect(this.radius * 0.2, 34, this.radius * 1.1, 16);
+        ctx.strokeRect(this.radius * 0.2, 34, this.radius * 1.1, 16);
+
+        ctx.fillStyle = '#12040a';
+        ctx.strokeStyle = '#ff0044';
+        ctx.lineWidth = 5;
+
+        ctx.beginPath();
+        ctx.moveTo(this.radius * 1.1, 0);
+        ctx.lineTo(this.radius * 0.4, -this.radius * 0.85);
+        ctx.lineTo(-this.radius * 0.7, -this.radius * 0.8);
+        ctx.lineTo(-this.radius, 0);
+        ctx.lineTo(-this.radius * 0.7, this.radius * 0.8);
+        ctx.lineTo(this.radius * 0.4, this.radius * 0.85);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        let coreGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 35);
+        coreGrad.addColorStop(0, '#ffffff');
+        coreGrad.addColorStop(0.4, '#ff0055');
+        coreGrad.addColorStop(1, '#4a0011');
+
+        ctx.fillStyle = coreGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 32 + Math.sin(this.pulse) * 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(this.x - camX, this.y - camY - this.radius - 40);
+        
+        ctx.fillStyle = 'rgba(10, 0, 5, 0.85)';
+        ctx.fillRect(-100, -10, 200, 20);
+        
+        let healthPct = Math.max(0, this.health) / this.maxHealth;
+        let hpGrad = ctx.createLinearGradient(-96, 0, 96, 0);
+        hpGrad.addColorStop(0, '#ff0055');
+        hpGrad.addColorStop(1, '#ff5500');
+        
+        ctx.fillStyle = hpGrad;
+        ctx.fillRect(-96, -7, 192 * healthPct, 14);
+        
+        ctx.strokeStyle = '#ff0055';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff0055';
+        ctx.strokeRect(-100, -10, 200, 20);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText("THE DOOMINATOR", 0, -15);
+        ctx.restore();
+    }
+}
+
 function generateGemsArray() {
     let arr = [];
     for(let i=0; i<95; i++) {
@@ -662,10 +810,42 @@ function generateGemsArray() {
     return arr;
 }
 
+function showBossWarning() {
+    let warningBanner = document.createElement('div');
+    warningBanner.innerText = "⚠️ THE DOOMINATOR ARRIVED ⚠️";
+    warningBanner.style.position = 'absolute';
+    warningBanner.style.top = '25%';
+    warningBanner.style.left = '50%';
+    warningBanner.style.transform = 'translate(-50%, -50%)';
+    warningBanner.style.color = '#ff0044';
+    warningBanner.style.fontFamily = 'monospace, sans-serif';
+    warningBanner.style.fontSize = '2.5rem';
+    warningBanner.style.fontWeight = 'bold';
+    warningBanner.style.letterSpacing = '4px';
+    warningBanner.style.textShadow = '0 0 20px #ff0044, 0 0 40px #ff0000';
+    warningBanner.style.zIndex = '100';
+    warningBanner.style.pointerEvents = 'none';
+    warningBanner.style.animation = 'pulse 0.8s infinite alternate';
+
+    document.body.appendChild(warningBanner);
+
+    setTimeout(() => {
+        warningBanner.remove();
+    }, 4000);
+}
+
 function startGame(gemsData = null) {
     let name = playerNameInput.value.trim() || "Player";
     player = new Player(arenaSize/2, arenaSize/2, name);
     entities.bullets = []; entities.gems = []; entities.particles = []; backgroundBullets = [];
+    
+    entities.bosses = [];
+    entities.bossBullets = [];
+    
+    entities.bosses.push(new DestroyerDominator(arenaSize/2, arenaSize/2 - 300));
+
+    showBossWarning();
+
     if (gemsData) {
         gemsData.forEach(g => entities.gems.push(new Gem(g.x, g.y, g.color)));
     } else {
@@ -685,7 +865,6 @@ function renderCinematicSpace(camX, camY) {
     const logicalWidth = canvas.width / dpr;
     const logicalHeight = canvas.height / dpr;
     
-    // Fondo de vacío denso infernal
     let bgGrad = ctx.createRadialGradient(logicalWidth/2, logicalHeight/2, 50, logicalWidth/2, logicalHeight/2, logicalWidth * 0.95);
     bgGrad.addColorStop(0, '#0a0100');
     bgGrad.addColorStop(0.6, '#030000');
@@ -709,44 +888,58 @@ function renderCinematicSpace(camX, camY) {
     if (nebParallaxY > 0) ctx.drawImage(nebulaCache, nebParallaxX, nebParallaxY - arenaSize);
     ctx.restore();
 
-    // DIBUJAR AGUJEROS NEGROS DEL FONDO CON EFECTO DE DISTORSIÓN Y DISCO DE ACRECIÓN ARDIENTE
     blackHoles.forEach(bh => {
         let bx = (bh.x - camX * bh.depth);
         let by = (bh.y - camY * bh.depth);
         bx = ((bx % arenaSize) + arenaSize) % arenaSize;
         by = ((by % arenaSize) + arenaSize) % arenaSize;
 
-        bh.currentRotation += bh.rotationSpeed;
-        bh.pulsePhase += 0.05;
-        let pulseGlow = Math.sin(bh.pulsePhase) * 6;
+        bh.currentRotation += bh.rotationSpeed * 0.4;
+
+        ctx.save();
+        ctx.translate(bx, by);
+        
+        let aura = ctx.createRadialGradient(0, 0, bh.singularityRadius, 0, 0, bh.accretionRadius * 2);
+        aura.addColorStop(0, 'rgba(255, 255, 255, 0.9)'); 
+        aura.addColorStop(0.15, 'rgba(255, 120, 0, 0.6)');
+        aura.addColorStop(0.5, 'rgba(80, 0, 150, 0.2)');
+        aura.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = aura;
+        ctx.beginPath(); ctx.arc(0, 0, bh.accretionRadius * 2, 0, Math.PI * 2); ctx.fill();
+
+        ctx.rotate(bh.currentRotation);
+
+        ctx.strokeStyle = 'rgba(255, 130, 0, 0.6)';
+        ctx.lineWidth = bh.singularityRadius * 0.5;
+        ctx.shadowBlur = 40; ctx.shadowColor = '#ff3300';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, bh.accretionRadius * 1.2, bh.accretionRadius * 1.2, 0, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.fillStyle = '#000000';
+        ctx.shadowBlur = 10; ctx.shadowColor = '#000000';
+        ctx.beginPath(); ctx.arc(0, 0, bh.singularityRadius, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
 
         ctx.save();
         ctx.translate(bx, by);
         ctx.rotate(bh.currentRotation);
+        
+        let gradientFront = ctx.createLinearGradient(-bh.accretionRadius, 0, bh.accretionRadius, 0);
+        gradientFront.addColorStop(0, 'rgba(255, 150, 0, 0)');
+        gradientFront.addColorStop(0.3, 'rgba(255, 220, 100, 1)');
+        gradientFront.addColorStop(0.7, 'rgba(255, 100, 0, 0.9)');
+        gradientFront.addColorStop(1, 'rgba(255, 50, 0, 0)');
 
-        // 1. Brillo exterior térmico del disco
-        let outerAcreDistortion = ctx.createRadialGradient(0, 0, bh.singularityRadius * 1.2, 0, 0, bh.accretionRadius + pulseGlow);
-        outerAcreDistortion.addColorStop(0, 'rgba(255, 60, 0, 0.7)');
-        outerAcreDistortion.addColorStop(0.3, 'rgba(255, 150, 0, 0.4)');
-        outerAcreDistortion.addColorStop(0.7, 'rgba(120, 0, 255, 0.15)'); // Distorsión gravitacional púrpura en bordes
-        outerAcreDistortion.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = outerAcreDistortion;
-        ctx.beginPath(); ctx.arc(0, 0, bh.accretionRadius + pulseGlow, 0, Math.PI * 2); ctx.fill();
-
-        // 2. Anillo de fuego asimétrico (simulación de Relatividad/Doppler)
-        ctx.scale(1.5, 0.65);
-        ctx.strokeStyle = '#ffdd00';
-        ctx.lineWidth = 7;
-        ctx.shadowBlur = 25; ctx.shadowColor = '#ff4500';
-        ctx.beginPath(); ctx.arc(0, 0, bh.singularityRadius * 2.5, 0, Math.PI * 1.2); ctx.stroke();
-        ctx.restore();
-
-        // 3. Horizonte de sucesos / Singularidad central (Absorción de luz pura)
-        ctx.save();
-        ctx.translate(bx, by);
-        ctx.fillStyle = '#000000';
-        ctx.shadowBlur = 15; ctx.shadowColor = '#000000';
-        ctx.beginPath(); ctx.arc(0, 0, bh.singularityRadius, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = gradientFront;
+        ctx.lineWidth = bh.singularityRadius * 0.45;
+        ctx.shadowBlur = 25; ctx.shadowColor = '#ffaa00';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, bh.accretionRadius * 1.35, bh.singularityRadius * 0.35, 0, 0, Math.PI);
+        ctx.stroke();
         ctx.restore();
     });
 
@@ -840,7 +1033,6 @@ function broadcastToClients(msg) {
     }
 }
 
-// --- BUCLE PRINCIPAL (LOOP) ---
 function loop() {
     const logicalWidth = canvas.width / dpr;
     const logicalHeight = canvas.height / dpr;
@@ -851,7 +1043,6 @@ function loop() {
     }
     renderCinematicSpace(camX, camY);
 
-    // Actualizar y dibujar ejércitos e ráfagas del fondo (Acción fluida e inofensiva siempre corriendo)
     backgroundBots.forEach(bot => {
         bot.update();
         bot.draw(camX, camY);
@@ -894,7 +1085,7 @@ function loop() {
         }
     }
     
-    ctx.strokeStyle = 'rgba(255, 68, 0, 0.03)'; ctx.lineWidth = 1; // Cuadrícula de arena volcánica
+    ctx.strokeStyle = 'rgba(255, 68, 0, 0.03)'; ctx.lineWidth = 1; 
     for(let x = 0; x <= arenaSize; x += 400) {
         ctx.beginPath(); ctx.moveTo(x - camX, 0 - camY); ctx.lineTo(x - camX, arenaSize - camY); ctx.stroke();
     }
@@ -906,6 +1097,47 @@ function loop() {
     ctx.strokeRect(-camX, -camY, arenaSize, arenaSize);
     ctx.shadowBlur = 0; 
     
+    entities.bosses.forEach((boss, bIndex) => {
+        boss.update();
+        boss.draw(camX, camY);
+        
+        for(let i = entities.bullets.length - 1; i >= 0; i--) {
+            let b = entities.bullets[i];
+            if (Math.hypot(b.x - boss.x, b.y - boss.y) < boss.radius + 15) {
+                boss.health -= 50; 
+                createExplosion(b.x, b.y, b.color, 8);
+                entities.bullets.splice(i, 1);
+                
+                if (boss.health <= 0) {
+                    boss.isDead = true;
+                    createExplosion(boss.x, boss.y, '#ffaa00', 80); 
+                    entities.bosses.splice(bIndex, 1);
+                    player.score += 15000; 
+                    scoreVal.innerText = player.score;
+                }
+            }
+        }
+    });
+
+    for (let i = entities.bossBullets.length - 1; i >= 0; i--) {
+        let bb = entities.bossBullets[i];
+        bb.update();
+        bb.draw(camX, camY);
+        
+        if (Math.hypot(bb.x - player.x, bb.y - player.y) < player.radius + bb.radius) {
+            player.health -= 40; 
+            if (healthBar) healthBar.style.width = (Math.max(0, player.health) / player.maxHealth * 100) + '%';
+            createExplosion(player.x, player.y, '#ff0000', 25);
+            entities.bossBullets.splice(i, 1);
+            continue;
+        }
+
+        if (bb.life <= 0 || bb.x < 0 || bb.x > arenaSize || bb.y < 0 || bb.y > arenaSize) {
+            createExplosion(bb.x, bb.y, bb.color, 15); 
+            entities.bossBullets.splice(i, 1);
+        }
+    }
+
     for(let i = entities.particles.length - 1; i >= 0; i--) {
         let p = entities.particles[i]; p.update(); p.draw(camX, camY);
         if (p.life <= 0) entities.particles.splice(i, 1);
